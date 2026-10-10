@@ -1,0 +1,24 @@
+databases:
+  - name: hassotracker-db
+    plan: free
+
+services:
+  - type: web
+    name: hassotracker
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60"
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        value: "lqb)-s2h)tv$k&4u!8_0k_%mrpcqw%p1!9f&^*0q*dme&ll-hs"
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "hassotracker.onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hassotracker-db
+          property: connectionString
