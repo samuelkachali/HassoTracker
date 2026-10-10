@@ -1,0 +1,111 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Products &amp; prices - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Products &amp; prices</h1>
+    <div class="sub">The quantities you sell in (buckets, bags...) and today's price for each.</div>
+  </div>
+</div>
+
+<div class="card card-pad mb-2">
+  <div class="section-head" style="margin-bottom:0">
+    <h2>Add a product</h2>
+  </div>
+  <form method="post" novalidate class="mt-1">
+    {% csrf_token %}
+    <div class="inline-form">
+      <div class="grow">
+        <label class="field-label" for="{{ product_form.name.id_for_label }}">What do you sell?</label>
+        {{ product_form.name }}
+        {% for error in product_form.name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <button class="btn" type="submit">Add product</button>
+    </div>
+  </form>
+</div>
+
+<div class="section">
+  {% for product in products %}
+    <div class="card card-pad mb-2">
+      <div class="section-head">
+        <h2>{{ product.name }}</h2>
+        <span class="badge">{{ product.units.count }} unit{{ product.units.count|pluralize }}</span>
+      </div>
+
+      {% if product.units.all %}
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Selling unit</th><th class="num">Current price</th><th class="num">Edit price</th><th></th></tr></thead>
+            <tbody>
+              {% for unit in product.units.all %}
+                <tr>
+                  <td class="bold">{{ unit.display_label }}</td>
+                  <td class="num">{{ unit.current_price|money }}</td>
+                  <td class="num">
+                    <form method="post" action="{% url 'unit_update' unit.pk %}" class="inline-form" style="justify-content:flex-end">
+                      {% csrf_token %}
+                      <input class="field-input" style="width:130px" type="number" step="0.01" min="0" name="price" value="{{ unit.current_price|floatformat:'-2' }}" aria-label="Price for {{ unit.display_label }}">
+                      <button class="btn btn-quiet btn-sm" type="submit">Save</button>
+                    </form>
+                  </td>
+                  <td class="right">
+                    <form method="post" action="{% url 'unit_delete' unit.pk %}" onsubmit="return confirm('Remove {{ unit.display_label }}?');">{% csrf_token %}
+                      <button class="btn btn-danger btn-sm" type="submit">Remove</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted small">No selling units yet - add one below.</p>
+      {% endif %}
+
+      <form method="post" action="{% url 'unit_add' product.pk %}" class="mt-2">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div>
+            <label class="field-label">Quantity</label>
+            <select class="field-input field-select" name="unit_type" data-add-type>
+              <option value="">Choose a quantity...</option>
+              <option value="litre:5">5 Litre bucket</option>
+              <option value="litre:8">8 Litre bucket</option>
+              <option value="litre:10">10 Litre bucket</option>
+              <option value="litre:20">20 Litre bucket</option>
+              <option value="kg:50">50 kg bag</option>
+              <option value="other">Other (describe it)</option>
+            </select>
+          </div>
+          <div data-add-label style="display:none">
+            <label class="field-label">Describe it</label>
+            <input class="field-input" type="text" name="label" placeholder="e.g. large bowl">
+          </div>
+          <div>
+            <label class="field-label">Price today</label>
+            <input class="field-input" type="number" step="0.01" min="0" name="price" placeholder="e.g. 3000">
+          </div>
+          <div style="align-self:end">
+            <button class="btn btn-ghost" type="submit">Add selling unit</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  {% empty %}
+    <div class="empty"><h3>No products yet</h3><p>Add the product you trade in to get started.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('[data-add-type]').forEach(function (select) {
+  var wrap = select.closest('form').querySelector('[data-add-label]');
+  function sync() { wrap.style.display = (select.value === 'other') ? '' : 'none'; }
+  select.addEventListener('change', sync);
+  sync();
+});
+</script>
+{% endblock %}

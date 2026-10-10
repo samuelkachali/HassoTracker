@@ -1,0 +1,51 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Orders - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Orders</h1>
+    <div class="sub">Stock you've bought, from order to received.</div>
+  </div>
+  <a class="btn btn-lg" href="{% url 'order_create' %}">+ New order</a>
+</div>
+
+<div class="section">
+  {% if orders %}
+    <div class="card card-pad" style="padding:6px 0">
+      <div class="table-wrap" style="padding:0 12px">
+        <table class="data">
+          <thead><tr><th>Date</th><th>Product</th><th class="num">KGs ordered</th><th class="num">~ bags</th><th class="num">Goods cost</th><th class="num">Expenses</th><th class="num">Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for order in orders %}
+              <tr class="clickable" onclick="location.href='{% url 'order_detail' order.pk %}'">
+                <td>{{ order.order_date|date:"d M Y" }}</td>
+                <td class="bold">{{ order.product.name }}</td>
+                <td class="num">{{ order.quantity_kg|floatformat:0 }}</td>
+                <td class="num">{{ order.bags }}</td>
+                <td class="num">{{ order.order_price|money }}</td>
+                <td class="num">{{ order.expenses_total|money }}</td>
+                <td class="num">{{ order.total_spent|money }}</td>
+                <td>
+                  {% if order.is_received %}
+                    <span class="chip">Received</span>
+                  {% else %}
+                    <span class="chip chip-amber">Awaiting</span>
+                  {% endif %}
+                </td>
+                <td class="right"><span class="muted small">&rarr;</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="empty">
+      <h3>No orders yet</h3>
+      <p>Start with the stock you buy - everything else builds on it.</p>
+      <a class="btn" href="{% url 'order_create' %}">Create your first order</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

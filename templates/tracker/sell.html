@@ -1,0 +1,156 @@
+{% extends 'app_base.html' %}{% load money %}{% load static %}
+{% block title %}Record a sale - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="day-bar">
+  <div>
+    <div class="day-title">{{ day_title }}</div>
+    <div class="day-date">{{ selected|date:"l, d F Y" }}</div>
+  </div>
+  <div class="day-nav">
+    <a class="btn btn-ghost btn-sm" href="?date={{ prev_day|date:'Y-m-d' }}">&larr; {{ prev_day|date:"D d" }}</a>
+    <input type="date" class="day-picker" value="{{ selected_date_iso }}"{% if is_past %} data-onchange-target="true"{% endif %} max="{{ today|date:'Y-m-d' }}" aria-label="Pick a day">
+    {% if is_past %}<a class="btn btn-ghost btn-sm" href="?date={{ today|date:'Y-m-d' }}">Today</a>{% endif %}
+    <a class="btn btn-ghost btn-sm" href="?date={{ next_day|date:'Y-m-d' }}">{{ next_day|date:"D d" }} &rarr;</a>
+  </div>
+</div>
+
+<div class="totals-strip mt-2">
+  <div class="stat good"><div class="label">Cash today</div><div class="value sm">{{ day.cash_amount|money }}</div><div class="hint">{{ day.cash_buckets }} unit{{ day.cash_buckets|pluralize }}</div></div>
+  <div class="stat blue"><div class="label">Layby today</div><div class="value sm">{{ day.layby_amount|money }}</div><div class="hint">{{ day.layby_buckets }} unit{{ day.layby_buckets|pluralize }}</div></div>
+  <div class="stat"><div class="label">Total value</div><div class="value sm">{{ day.cash_amount|add:day.layby_amount|money }}</div><div class="hint">cash + layby</div></div>
+</div>
+
+{% if has_yields %}
+  <div class="section">
+    <div class="section-head">
+      <h2>On the shelf</h2>
+      <span class="badge">{{ yields|length }} stock line{{ yields|length|pluralize }}</span>
+    </div>
+    <div class="sale-grid">
+      {% for item in yields %}
+        <div class="sale-card{% if item.available_quantity == 0 %} sold-out{% endif %}">
+          <div class="sale-card-top">
+            <div>
+              <div class="size">{{ item.selling_unit.display_label }}</div>
+              <div class="product">{{ item.batch.order.product.name }}</div>
+            </div>
+            <div>
+              <div class="price">{{ item.price|money }}</div>
+              <div class="stock-line">
+                {% if item.available_quantity == 0 %}
+                  Sold out
+                {% else %}
+                  {{ item.available_quantity }} available
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <form class="sale-form" method="post" action="{% url 'sale_record' %}"
+                data-context="{{ item.pk }}"
+                data-max="{{ item.available_quantity }}"
+                data-price="{{ item.price }}">
+            {% csrf_token %}
+            <input type="hidden" name="yield_id" value="{{ item.pk }}">
+            <input type="hidden" name="sale_date" value="{{ selected_date_iso }}">
+            <input type="hidden" name="next" value="/sell/">
+            <input type="hidden" name="payment" value="cash">
+            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="customer_name" value="">
+            <input type="hidden" name="customer_phone" value="">
+
+            <div class="qty-row">
+              <span class="qty-label">How many?</span>
+              <div class="qty-control">
+                <button type="button" class="qty-btn" data-qty="minus" aria-label="Fewer">&minus;</button>
+                <div class="qty-value" id="qty_display_{{ item.pk }}">1</div>
+                <button type="button" class="qty-btn" data-qty="plus" aria-label="More">+</button>
+              </div>
+            </div>
+
+            <div class="pay-toggle">
+              <button type="button" class="pay-option active" data-payment="cash">CASH</button>
+              <button type="button" class="pay-option" data-payment="layby">LAYBY</button>
+            </div>
+
+            <div class="qty-row">
+              <span class="line-total">Total&nbsp;<strong id="line_total_{{ item.pk }}">{{ item.price|money }}</strong></span>
+              <button class="btn btn-lg" type="submit" data-role="record" {% if item.available_quantity == 0 %}disabled{% endif %}>Record sale</button>
+            </div>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% elif has_batches %}
+  <div class="empty mt-3">
+    <h3>All stock sold out</h3>
+    <p>There are no units left on the shelf.</p>
+  </div>
+{% else %}
+  <div class="empty mt-3">
+    <h3>Nothing to sell yet</h3>
+    <p>Buy an order, then receive and count the stock so it appears here.</p>
+    <a class="btn" href="{% url 'order_create' %}">Create an order</a>
+  </div>
+{% endif %}
+
+<div class="section mt-4">
+  <div class="section-head"><h2>Sales on {{ selected|date:"d M Y" }}</h2>
+    {% if day.sales %}<span class="badge">{{ day.sales|length }} sale{{ day.sales|length|pluralize }}</span>{% endif %}
+  </div>
+  {% if day.sales %}
+    <div class="card card-pad">
+      <ul class="list">
+        {% for sale in day.sales %}
+          <li>
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+              <strong>{{ sale.quantity }} x {{ sale.unit_label }}</strong>
+              <span class="row-sub">{{ sale.yield_item.batch.order.product.name }}{% if sale.customer_name %} &middot; {{ sale.customer_name }}{% endif %}</span>
+            </div>
+            <div class="right">
+              <span class="badge {% if sale.is_layby %}blue{% else %}green{% endif %}">{{ sale.payment_method|upper }}</span>
+              <span class="bold tabular">{{ sale.amount|money }}</span>
+              {% if not sale.is_settled %}
+                <form method="post" action="{% url 'sale_delete' sale.pk %}" class="mx-0">
+                  {% csrf_token %}
+                  <button type="button" class="btn btn-danger btn-sm" data-role="delete" data-message="Remove this sale?">Remove</button>
+                </form>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="empty"><p style="margin:0">No sales recorded yet for this day.</p></div>
+  {% endif %}
+</div>
+
+<div class="modal-backdrop" id="layby-modal" hidden>
+  <div class="modal-card">
+    <h3>Layby record</h3>
+    <p class="sub">The customer pays later. Enter who it is so you can follow up.</p>
+    <div class="modal-fields">
+      <div>
+        <label class="field-label">Customer name <span class="req">*</span></label>
+        <input class="field-input" id="layby-name" type="text" placeholder="e.g. Madam Banda">
+        <div class="field-error" id="layby-name-error" hidden>Please enter the customer name.</div>
+      </div>
+      <div>
+        <label class="field-label">Customer phone</label>
+        <input class="field-input" id="layby-phone" type="tel" placeholder="0999 000 000">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-modal-close type="button">Cancel</button>
+      <button class="btn" id="layby-submit" type="submit">Save layby</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sell.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Layby book - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Layby book</h1>
+    <div class="sub">Money you're still expecting from customers.</div>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="sub">Open laybys</div>
+    <div class="headline amber-text">{{ open_total|money }}</div>
+    <div class="row-sub">{{ sales|length }} customer{{ sales|length|pluralize }}</div>
+  </div>
+  <div class="card">
+    <div class="sub">Settled to date</div>
+    <div class="headline">{{ settled_total|money }}</div>
+    <div class="row-sub">{{ totals.cash_received|money }} cash sales too</div>
+  </div>
+  <div class="card">
+    <div class="sub">Expected in total</div>
+    <div class="headline">{{ totals.expected_in|money }}</div>
+    <div class="row-sub">cash + settled + open laybys</div>
+  </div>
+</div>
+
+<div class="tabs mt-3">
+  <a class="tab {% if status == 'open' %}active{% endif %}" href="?status=open">Open</a>
+  <a class="tab {% if status == 'settled' %}active{% endif %}" href="?status=settled">Settled</a>
+  <a class="tab {% if status == 'all' %}active{% endif %}" href="?status=all">All</a>
+</div>
+
+{% if sales %}
+  <div class="card card-pad" style="padding:6px 0">
+    <div class="table-wrap" style="padding:0 12px">
+      <table class="data">
+        <thead><tr><th>Customer</th><th>What they owe</th><th class="num">Units &amp; amount</th><th>Sold</th><th>Days</th><th></th></tr></thead>
+        <tbody>
+          {% for sale in sales %}
+            <tr>
+              <td class="bold">
+                {{ sale.customer_name|default:'—' }}
+                {% if sale.customer_phone %}<div class="row-sub">{{ sale.customer_phone }}</div>{% endif %}
+              </td>
+              <td>{{ sale.quantity }} x {{ sale.unit_label }}<div class="row-sub">{{ sale.yield_item.batch.order.product.name }}</div></td>
+              <td class="num">{{ sale.amount|money }}</td>
+              <td>{{ sale.sale_date|date:"d M Y" }}</td>
+              <td class="num">
+                {% if sale.is_settled %}
+                  <span class="badge green">Settled</span>
+                {% else %}
+                  <span class="badge amber">{{ sale.days_outstanding }} day{{ sale.days_outstanding|pluralize }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="btn-row nowrap right" style="justify-content:flex-end">
+                  {% if sale.customer_phone %}
+                    <a class="btn btn-ghost btn-sm" href="tel:{{ sale.customer_phone }}">Call</a>
+                  {% endif %}
+                  {% if not sale.is_settled %}
+                    <form method="post" action="{% url 'layby_settle' sale.pk %}" class="mx-0">
+                      {% csrf_token %}
+                      <button class="btn btn-sm" type="submit">Mark settled</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="empty">
+    <h3>{% if status == 'settled' %}Nothing settled yet{% else %}No open laybys{% endif %}</h3>
+    <p>Layby sales recorded on the sell page show up here.</p>
+  </div>
+{% endif %}
+{% endblock %}

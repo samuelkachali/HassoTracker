@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Set up your business - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:520px">
+    <h1>Set up your business</h1>
+    <p class="sub">Tell us what you sell and the quantities you sell it in, then set today's price for each.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="auth-fields">
+        <div>
+          <label class="field-label" for="{{ form.business_name.id_for_label }}">Business name <span class="req">*</span></label>
+          {{ form.business_name }}
+          {% for error in form.business_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.phone.id_for_label }}">Phone (optional)</label>
+          {{ form.phone }}
+        </div>
+        <div>
+          <label class="field-label" for="{{ form.product_name.id_for_label }}">What do you sell? <span class="req">*</span></label>
+          {{ form.product_name }}
+          {% for error in form.product_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <label class="field-label">What quantities do you sell in? <span class="req">*</span></label>
+        {% if unit_error %}<div class="field-error">{{ unit_error }}</div>{% endif %}
+        {{ formset.management_form }}
+
+        <div class="mt-2" style="display:grid;gap:14px">
+          {% for unit_form in formset %}
+            <div class="card" style="box-shadow:none;background:var(--surface-2);padding:14px">
+              <div class="field-label small">Selling unit {{ forloop.counter }}</div>
+              <div class="unit-row">
+                <div>
+                  {{ unit_form.unit_type }}
+                  {% for error in unit_form.unit_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div data-label-wrap>
+                  {{ unit_form.label }}
+                  {% for error in unit_form.label.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div>
+                  {{ unit_form.price }}
+                  <label class="small muted" for="{{ unit_form.price.id_for_label }}" style="display:block;margin-top:4px">Price per unit today</label>
+                  {% for error in unit_form.price.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="field-help mt-1">e.g. a "5 Litre bucket" at MWK 3,000 or a "50 kg bag" at MWK 45,000. Add as many as you sell. Prices are just today's - you can change them later.</div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-block btn-lg" type="submit">Start tracking</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.unit-row').forEach(function (row) {
+  var select = row.querySelector('[data-unit-type]');
+  var labelWrap = row.querySelector('[data-label-wrap]');
+  function sync() {
+    labelWrap.style.display = (select.value === 'other') ? '' : 'none';
+  }
+  select.addEventListener('change', sync);
+  sync();
+});
+</script>
+{% endblock %}

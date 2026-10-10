@@ -1,0 +1,173 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Order #{{ order.pk }} - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ order.product.name }} &middot; {{ order.order_date }}</h1>
+    <div class="sub">{{ order.quantity_kg|floatformat:0 }} kg ordered &nbsp;|&nbsp; about {{ order.bags }} x 50kg bags &nbsp;|&nbsp; {{ order.price_per_kg|money }} / kg</div>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'order_list' %}">&larr; Orders</a>
+    <a class="btn" href="{% url 'order_edit' order.pk %}">Edit order</a>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="sub">Goods cost</div>
+    <div class="headline">{{ order.order_price|money }}</div>
+  </div>
+  <div class="card">
+    <div class="sub">Expenses on the way</div>
+    <div class="headline">{{ order.expenses_total|money }}</div>
+    <div class="row-sub">{{ order.transport_to_market|money }} to market &middot; {{ order.transport_from_market|money }} back</div>
+    <div class="row-sub">{{ order.food_amount|money }} food &middot; {{ order.other_amount|money }} other{% if order.other_description %} ({{ order.other_description }}){% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="sub">Total spent</div>
+    <div class="headline">{{ order.total_spent|money }}</div>
+  </div>
+  <div class="card">
+    <div class="sub">Money before order</div>
+    <div class="headline">{{ order.opening_balance|money }}</div>
+    <div class="row-sub">Money remaining
+      <span class="badge {% if order.money_remaining < 0 %}red{% else %}green{% endif %}">{{ order.money_remaining|money }}</span>
+    </div>
+  </div>
+</div>
+
+{% if order.notes %}<div class="card card-pad mb-2"><p class="muted small mb-0">{{ order.notes }}</p></div>{% endif %}
+
+<div class="card card-pad mt-2" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+  <div>
+    <div class="small muted">Created a wrong order? You can delete it - this removes the order and anything linked to it.</div>
+  </div>
+  <form method="post" action="{% url 'order_delete' order.pk %}"
+        onsubmit="return confirm('Delete this order and everything linked to it? This cannot be undone.')">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Delete order</button>
+  </form>
+</div>
+
+{% if not units %}
+  <div class="banner mt-2">
+    <div>
+      <div class="headline">No selling units yet</div>
+      <div class="detail">You can't count or sell this stock until you define the quantities you sell it in.</div>
+    </div>
+  </div>
+  <a class="btn mt-2" href="{% url 'products' %}">Add selling units</a>
+{% elif not order.is_received %}
+  <div class="section title-line mt-3"><div class="title">Step 2 &middot; Receive &amp; count the stock</div></div>
+  <form method="post" action="{% url 'receive_batch' order.pk %}" class="mt-2">
+    {% csrf_token %}
+    <div class="card card-pad">
+      <div class="mb-2">
+        <label class="field-label">{{ batch_form.received_date.label }}</label>
+        {{ batch_form.received_date }}
+      </div>
+      <label class="field-label">Count the buckets / bags this delivery produced</label>
+      <div class="yield-grid mt-1">
+        {% for unit in units %}
+          <div class="yield-box">
+            <div class="yield-label"><span>{{ unit.display_label }}</span><span class="yield-price">{{ unit.current_price|money }}</span></div>
+            <input class="field-input" type="number" min="0" step="1" name="yield_{{ unit.pk }}" placeholder="0" data-count-label>
+            <label class="small muted" style="display:block;margin-top:6px">{{ unit.current_price|money }} each when sold</label>
+          </div>
+        {% endfor %}
+      </div>
+      <label class="field-label mt-2">{{ batch_form.notes.label }}</label>
+      {{ batch_form.notes }}
+      {% if order.batches.exists %}
+        <div class="field-help">You've already received {{ order.batches.count }} batch{{ order.batches.count|pluralize }} for this order. You can add more deliveries.</div>
+      {% endif %}
+      <button class="btn btn-lg mt-2" type="submit">Save stock received</button>
+    </div>
+  </form>
+{% endif %}
+
+{% for batch in order.batches.all %}
+  <div class="section title-line mt-4"><div class="title">Batch received {{ batch.received_date }}</div></div>
+
+  <div class="card card-pad mt-2">
+    {% if batch.notes %}<p class="muted small">{{ batch.notes }}</p>{% endif %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Selling unit</th><th class="num">Current price</th><th class="num">Produced</th><th class="num">Sold</th><th class="num">Available</th><th class="num">Potential</th></tr></thead>
+        <tbody>
+          {% for item in batch.yields.all %}
+            <tr>
+              <td class="bold">{{ item.selling_unit.display_label }}</td>
+              <td class="num">{{ item.price|money }}</td>
+              <td class="num">{{ item.quantity_produced }}</td>
+              <td class="num">{{ item.sold_quantity }}</td>
+              <td class="num {% if item.available_quantity == 0 %}muted{% endif %}">{{ item.available_quantity }}</td>
+              <td class="num">{{ item.potential_revenue|money }}</td>
+            </tr>
+          {% endfor %}
+          <tr class="row-total">
+            <td>Total</td>
+            <td></td>
+            <td class="num">{{ batch.produced_total }}</td>
+            <td class="num">{{ batch.sold_total }}</td>
+            <td class="num">{{ batch.available_total }}</td>
+            <td class="num">{{ batch.potential_revenue|money }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-head mt-3" style="margin-bottom:8px"><h2>Preparation costs</h2></div>
+    {% if batch.prep_costs.all %}
+      <ul class="list mt-1">
+        {% for cost in batch.prep_costs.all %}
+          <li>
+            <div>
+              <strong>{{ cost.description }}</strong>
+              <span class="row-sub">on {{ cost.spent_at }}</span>
+            </div>
+            <div class="right">
+              <span class="bold">{{ cost.amount|money }}</span>
+              <form method="post" action="{% url 'prep_delete' cost.pk %}" class="mx-0">{% csrf_token %}
+                <button class="btn btn-danger btn-sm" type="submit">Remove</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+        <li class="row-total">
+          <div><strong>Total preparation</strong></div>
+          <div class="right bold">{{ batch.total_prep_cost|money }}</div>
+        </li>
+      </ul>
+    {% else %}
+      <p class="muted small">None yet - washing, packaging, fuel for selling...</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'prep_add' batch.pk %}" class="inline-form mt-1">
+      {% csrf_token %}
+      {{ prep_form.description }}
+      {{ prep_form.amount }}
+      <button class="btn btn-ghost btn-sm" type="submit">Add</button>
+    </form>
+
+    <div class="divider mt-3"></div>
+    <div class="kv at-0 mt-2">
+      <dt>Batch total cost (order + preparation)</dt><dd>{{ batch.total_cost|money }}</dd>
+      <dt>Potential revenue (if all sold)</dt><dd>{{ batch.potential_revenue|money }}</dd>
+      <dt class="total-line">Expected profit</dt>
+      <dd class="total-line {% if batch.potential_is_profitable %}green-text{% else %}red-text{% endif %}">{{ batch.expected_profit|money }}</dd>
+    </div>
+    <div class="banner mt-2 {% if batch.potential_is_profitable %}good{% else %}bad{% endif %}">
+      <div>
+        <div class="detail">You need to sell <strong>{{ batch.potential_revenue|money }}</strong> of stock to cover the <strong>{{ batch.total_cost|money }}</strong> you spent on it.</div>
+        {% if batch.potential_is_profitable %}
+          <div class="headline">{{ batch.expected_profit|money }} expected profit</div>
+        {% else %}
+          <div class="headline">This batch won't cover its cost</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

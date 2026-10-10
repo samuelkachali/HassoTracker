@@ -1,0 +1,106 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Dashboard - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Good day, {{ user.first_name|default:user.username }} 👋</h1>
+    <div class="sub">{{ today|date:"l, d F Y" }} &middot; your shop at a glance</div>
+  </div>
+  <a class="btn btn-lg" href="{% url 'sell' %}">+ Record a sale</a>
+</div>
+
+<div class="banner {% if report.in_profit %}good{% else %}bad{% endif %}">
+  <div>
+    <div class="detail">Overall - everything in, minus everything spent</div>
+    <div class="headline">{{ report.profit|money }} {% if report.in_profit %}profit{% else %}in the red{% endif %}</div>
+  </div>
+  {% if not report.in_profit %}
+    <div class="big">{{ report.to_break_even|money }}</div>
+  {% else %}
+    <div class="big">{{ report.profit|money }}</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Shop today</h2></div>
+  <div class="stat-grid">
+    <div class="stat good"><div class="label">Cash today</div><div class="value sm">{{ day.cash_amount|money }}</div><div class="hint">{{ day.cash_buckets }} unit{{ day.cash_buckets|pluralize }}</div></div>
+    <div class="stat blue"><div class="label">Layby today</div><div class="value sm">{{ day.layby_amount|money }}</div><div class="hint">{{ day.layby_buckets }} unit{{ day.layby_buckets|pluralize }}</div></div>
+    <div class="stat {% if report.in_profit %}good{% else %}bad{% endif %}"><div class="label">Money in (all time)</div><div class="value sm">{{ report.money_in|money }}</div><div class="hint">cash + settled laybys</div></div>
+    <div class="stat warn"><div class="label">Total spent</div><div class="value sm">{{ report.total_spent|money }}</div><div class="hint">{{ report.order_count }} orders</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Stock &amp; money waiting</h2></div>
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Units on the shelf</div><div class="value sm">{{ stock.available_buckets }}</div><div class="hint">worth {{ stock.potential_revenue|money }}</div></div>
+    <div class="stat amber"><div class="label">Open laybys</div><div class="value sm">{{ report.layby_open_count }}</div><div class="hint">{{ report.layby_open|money }} to collect</div></div>
+    <div class="stat"><div class="label">Products</div><div class="value sm">{{ product_count }}</div></div>
+    <div class="stat"><div class="label">Orders</div><div class="value sm">{{ order_count }}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Quick actions</h2></div>
+  <div class="btn-row">
+    <a class="btn" href="{% url 'sell' %}">Record a sale</a>
+    <a class="btn btn-ghost" href="{% url 'order_create' %}">New order</a>
+    <a class="btn btn-ghost" href="{% url 'layby' %}">Layby book</a>
+    <a class="btn btn-ghost" href="{% url 'summary' %}">Profit &amp; spend</a>
+    <a class="btn btn-ghost" href="{% url 'products' %}">Products &amp; prices</a>
+  </div>
+</div>
+
+<div class="section mt-4">
+  <div class="split">
+    <div>
+      <div class="section-head"><h2>Recent sales</h2></div>
+      <div class="card card-pad">
+        {% if recent_sales %}
+          <ul class="list">
+            {% for sale in recent_sales %}
+              <li>
+                <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+                  <strong>{{ sale.quantity }} x {{ sale.unit_label }}</strong>
+                  <span class="row-sub">{{ sale.yield_item.batch.order.product.name }} &middot; {{ sale.sale_date|date:"d M" }}</span>
+                </div>
+                <div class="right">
+                  <span class="badge {% if sale.is_layby %}blue{% else %}green{% endif %}">{{ sale.payment_method|upper }}</span>
+                  <span class="bold tabular">{{ sale.amount|money }}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted small" style="margin:0">Nothing sold yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="section-head"><h2>Collect from laybys</h2><a class="small" href="{% url 'layby' %}">See all &rarr;</a></div>
+      <div class="card card-pad">
+        {% if open_laybys %}
+          <ul class="list">
+            {% for sale in open_laybys %}
+              <li>
+                <div>
+                  <strong>{{ sale.customer_name|default:'Customer' }}</strong>
+                  <span class="row-sub" style="display:block">{{ sale.quantity }} x {{ sale.unit_label }} &middot; sold {{ sale.sale_date|date:"d M" }}</span>
+                </div>
+                <div class="right">
+                  <span class="bold tabular">{{ sale.amount|money }}</span>
+                  <a class="chip chip-amber" href="{% url 'layby' %}">{{ sale.days_outstanding }}d</a>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted small" style="margin:0">You're all caught up - no open laybys.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

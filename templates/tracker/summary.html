@@ -1,0 +1,89 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}Profit &amp; spend - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Profit &amp; spend</h1>
+    <div class="sub">The full picture across every order and sale.</div>
+  </div>
+</div>
+
+<div class="banner {% if report.in_profit %}good{% else %}bad{% endif %}">
+  <div>
+    <div class="detail">Money in minus what you've spent</div>
+    <div class="headline">{{ report.profit|money }} {% if report.in_profit %}profit{% else %}in the red{% endif %}</div>
+  </div>
+  {% if not report.in_profit %}
+    <div class="big">{{ report.to_break_even|money }}</div>
+  {% else %}
+    <div class="big">{{ report.profit|money }}</div>
+  {% endif %}
+</div>
+
+{% if report.projected_profit %}
+  <div class="card card-pad mt-2">
+    <div class="kv at-0">
+      <dt>Tied up in stock (potential value)</dt><dd>{{ stock.potential_revenue|money }}</dd>
+      <dt>Projected profit if all stock sells</dt><dd>{{ report.projected_profit|money }}</dd>
+    </div>
+  </div>
+{% endif %}
+
+<div class="section">
+  <div class="section-head"><h2>Money in</h2></div>
+  <div class="cards">
+    <div class="card"><div class="sub">Cash received</div><div class="headline">{{ report.cash_received|money }}</div></div>
+    <div class="card"><div class="sub">Laybys settled</div><div class="headline">{{ report.layby_settled|money }}</div></div>
+    <div class="card"><div class="sub">Laybys still open</div><div class="headline amber-text">{{ report.layby_open|money }}</div><div class="row-sub">{{ report.layby_open_count }} customer{{ report.layby_open_count|pluralize }}</div></div>
+    <div class="card"><div class="sub">Expected in total</div><div class="headline">{{ report.expected_in|money }}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Spending</h2></div>
+  <div class="cards">
+    <div class="card"><div class="sub">Goods cost</div><div class="headline">{{ report.goods_cost|money }}</div><div class="row-sub">{{ report.order_count }} order{{ report.order_count|pluralize }}</div></div>
+    <div class="card"><div class="sub">Transportation</div><div class="headline">{{ report.transport_total|money }}</div></div>
+    <div class="card"><div class="sub">Food on the way</div><div class="headline">{{ report.food_total|money }}</div></div>
+    <div class="card"><div class="sub">Other costs</div><div class="headline">{{ report.other_total|money }}</div></div>
+    <div class="card"><div class="sub">Preparation</div><div class="headline">{{ report.prep_total|money }}</div></div>
+    <div class="card"><div class="sub">Total spent</div><div class="headline">{{ report.total_spent|money }}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>Stock on the shelf</h2></div>
+  <div class="cards">
+    <div class="card"><div class="sub">Units available</div><div class="headline">{{ stock.available_buckets }}</div></div>
+    <div class="card"><div class="sub">Sold so far</div><div class="headline">{{ stock.sold_buckets }}</div></div>
+    <div class="card"><div class="sub">Produced / counted</div><div class="headline">{{ stock.produced_buckets }}</div></div>
+    <div class="card"><div class="sub">Worth on the shelf</div><div class="headline">{{ stock.potential_revenue|money }}</div><div class="row-sub">if every unit sells at today's price</div></div>
+  </div>
+</div>
+
+<div class="section mt-4">
+  <div class="section-head"><h2>Recent orders</h2><a class="small" href="{% url 'order_list' %}">All orders &rarr;</a></div>
+  <div class="card card-pad" style="padding:6px 0">
+    <div class="table-wrap" style="padding:0 12px">
+      <table class="data">
+        <thead><tr><th>Date</th><th>Product</th><th class="num">KGs</th><th class="num">Goods cost</th><th class="num">Expenses</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          {% for order in orders %}
+            <tr class="clickable" onclick="location.href='{% url 'order_detail' order.pk %}'">
+              <td>{{ order.order_date|date:"d M Y" }}</td>
+              <td class="bold">{{ order.product.name }}</td>
+              <td class="num">{{ order.quantity_kg|floatformat:0 }}</td>
+              <td class="num">{{ order.order_price|money }}</td>
+              <td class="num">{{ order.expenses_total|money }}</td>
+              <td class="num">{{ order.total_spent|money }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="muted">No orders yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

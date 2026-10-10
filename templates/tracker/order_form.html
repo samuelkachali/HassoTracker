@@ -1,0 +1,195 @@
+{% extends 'app_base.html' %}{% load money %}
+{% block title %}{% if editing %}Edit order{% else %}New order{% endif %} - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if editing %}Edit order #{{ order.pk }}{% else %}New order{% endif %}</h1>
+    <div class="sub">The stock you buy, everything spent getting it, and today's selling prices.</div>
+  </div>
+  <a class="btn btn-ghost" href="{% if editing %}{% url 'order_detail' order.pk %}{% else %}{% url 'order_list' %}{% endif %}">&larr; Back</a>
+</div>
+
+<div class="steps">
+  <span class="step current"><span class="n">1</span> Order &amp; expenses</span>
+  <span class="step"><span class="n">2</span> Receive &amp; count</span>
+  <span class="step"><span class="n">3</span> Sell</span>
+</div>
+
+<form method="post" novalidate>
+{% csrf_token %}
+<div class="split">
+  <div class="card card-pad">
+    <div class="form-grid">
+      <div class="full">
+        <label class="field-label">Product</label>
+        {% if editing %}
+          <input type="hidden" name="product" id="id_product" value="{{ order.product.pk }}">
+          <div class="field-input" style="background:var(--surface-2);color:var(--muted)">{{ order.product.name }}</div>
+        {% else %}
+          {{ form.product }}
+          {% for error in form.product.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% endif %}
+      </div>
+      <div><label class="field-label">Order date</label>{{ form.order_date }}</div>
+
+      <div>
+        <label class="field-label">{{ form.quantity_kg.label }} <span class="req">*</span></label>
+        {{ form.quantity_kg }}
+        <div class="field-help">Total kilograms. 50kg is a standard bag.</div>
+        {% for error in form.quantity_kg.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div>
+        <label class="field-label">{{ form.order_price.label }} <span class="req">*</span></label>
+        {{ form.order_price }}
+        <div class="field-help">What the whole order's goods cost.</div>
+        {% for error in form.order_price.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="section-head mt-3" style="margin-bottom:12px"><h2>Transportation</h2></div>
+    <div class="form-grid">
+      <div>
+        <label class="field-label">{{ form.transport_to_market.label }}</label>
+        {{ form.transport_to_market }}
+        <div class="field-help">Money to go to the market.</div>
+        {% for error in form.transport_to_market.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div>
+        <label class="field-label">{{ form.transport_from_market.label }}</label>
+        {{ form.transport_from_market }}
+        <div class="field-help">Money to come back.</div>
+        {% for error in form.transport_from_market.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div><label class="field-label">{{ form.food_amount.label }}</label>{{ form.food_amount }}</div>
+      <div><label class="field-label">{{ form.other_amount.label }}</label>{{ form.other_amount }}</div>
+      <div class="full"><label class="field-label">Other description</label>{{ form.other_description }}</div>
+    </div>
+
+    <div class="section-head mt-3" style="margin-bottom:12px"><h2>Selling prices</h2><span class="small muted">update them here if tomorrow brings a new price</span></div>
+
+    {% for product in products %}
+      <div class="price-editor" data-product="{{ product.pk }}" {% if not forloop.first %}hidden{% endif %}>
+        {% if product.units.all %}
+          {% for unit in product.units.all %}
+            <div class="price-line">
+              <span>
+                <span class="unit-name">{{ unit.display_label }}</span>
+                <span class="row-sub" style="display:block">onboarding price: {{ unit.current_price|money }}</span>
+              </span>
+              <input class="field-input" type="number" step="0.01" min="0" name="unit_price_{{ unit.pk }}" value="{{ unit.current_price|floatformat:'-2' }}"
+                     aria-label="Current price for {{ unit.display_label }}">
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="muted small">No selling units yet - <a href="{% url 'products' %}">add some</a> so you can count and sell this stock.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="section-head mt-3" style="margin-bottom:12px"><h2>Money</h2></div>
+    <div class="form-grid">
+      <div class="full">
+        <label class="field-label">{{ form.opening_balance.label }}</label>
+        {{ form.opening_balance }}
+        <div class="field-help">Cash you had before this order.</div>
+      </div>
+      <div class="full">
+        <label class="field-label">Notes</label>
+        {{ form.notes }}
+      </div>
+    </div>
+
+    {% for error in form.non_field_errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+    <div class="form-actions">
+      <button class="btn btn-lg" type="submit">{% if editing %}Save changes{% else %}Save order{% endif %}</button>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <h2 class="mb-2">Live check</h2>
+    <dl class="kv">
+      <dt>Goods cost</dt><dd id="calc-cost">{{ 0|money }}</dd>
+      <dt>Transport</dt><dd id="calc-transport">{{ 0|money }}</dd>
+      <dt>Food</dt><dd id="calc-food">{{ 0|money }}</dd>
+      <dt>Other</dt><dd id="calc-other">{{ 0|money }}</dd>
+      <dt class="total-line">Total spent</dt><dd class="total-line" id="calc-total">{{ 0|money }}</dd>
+      <dt>Money before order</dt><dd id="calc-before">{{ 0|money }}</dd>
+      <dt class="total-line">Money remaining</dt><dd class="total-line" id="calc-remaining">{{ 0|money }}</dd>
+    </dl>
+
+    <div class="mt-2" style="border-top:1px dashed var(--line)"></div>
+    <div class="mt-2 small muted" id="calc-derive"></div>
+
+    <div class="banner mt-3" id="calc-low-banner" style="display:none">
+      <div><div class="headline" id="calc-low">0</div><div class="detail">almost all your money is in this order</div></div>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var num = function (id) { var el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; };
+  var moneyPrefix = '{{ CURRENCY }} ';
+  var fmt = function (value) { return moneyPrefix + (value || 0).toLocaleString(undefined, {maximumFractionDigits: 0}); };
+  var ids = ['id_quantity_kg', 'id_order_price', 'id_transport_to_market', 'id_transport_from_market', 'id_food_amount', 'id_other_amount', 'id_opening_balance'];
+  var sel = document.getElementById('id_product');
+
+  function currentProduct() { return sel ? sel.value : (document.getElementById('id_product') || {}).value; }
+
+  function showProductEditor() {
+    var value = currentProduct();
+    document.querySelectorAll('.price-editor').forEach(function (block) {
+      block.hidden = String(block.dataset.product) !== String(value);
+    });
+  }
+
+  function update() {
+    var cost = num('id_order_price');
+    var transport = num('id_transport_to_market') + num('id_transport_from_market');
+    var food = num('id_food_amount');
+    var other = num('id_other_amount');
+    var before = num('id_opening_balance');
+    var total = cost + transport + food + other;
+    document.getElementById('calc-cost').textContent = fmt(cost);
+    document.getElementById('calc-transport').textContent = fmt(transport);
+    document.getElementById('calc-food').textContent = fmt(food);
+    document.getElementById('calc-other').textContent = fmt(other);
+    document.getElementById('calc-total').textContent = fmt(total);
+    document.getElementById('calc-before').textContent = fmt(before);
+    var remaining = before - total;
+    document.getElementById('calc-remaining').textContent = fmt(remaining);
+
+    var kg = num('id_quantity_kg');
+    var derive = document.getElementById('calc-derive');
+    if (kg > 0 && cost > 0) {
+      var bags = kg / 50;
+      var perKg = cost / kg;
+      derive.textContent = 'That is about ' + (bags).toFixed(2) + ' x 50kg bags, at ' + fmt(perKg) + ' per kg.';
+    } else {
+      derive.textContent = 'Fill in KGs ordered and the order price to see the maths.';
+    }
+
+    var low = document.getElementById('calc-low-banner');
+    if (before > 0 && total >= before) {
+      low.style.display = 'flex';
+      document.getElementById('calc-low').textContent = 'Spent ' + fmt(total) + ' with ' + fmt(before) + ' before - nothing left.';
+    } else {
+      low.style.display = 'none';
+    }
+  }
+
+  ids.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', update); }
+  });
+  if (sel) { sel.addEventListener('change', function () { showProductEditor(); }); }
+
+  showProductEditor();
+  update();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Log in - HassoTracker{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo-row">
+      <span class="brand-mark">H</span>
+      <strong>HassoTracker</strong>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="sub">Log in to record orders, sales and laybys.</p>
+
+    {% if form.errors %}
+      <ul class="errorlist"><li>Wrong username or password. Please try again.</li></ul>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="auth-fields">
+        <div>
+          <label class="field-label" for="id_username">Username</label>
+          <input class="field-input" type="text" name="username" id="id_username" autofocus autocomplete="username" required>
+        </div>
+        <div>
+          <label class="field-label" for="id_password">Password</label>
+          <input class="field-input" type="password" name="password" id="id_password" autocomplete="current-password" required>
+        </div>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="form-actions">
+        <button class="btn btn-block btn-lg" type="submit">Log in</button>
+      </div>
+    </form>
+
+    <p class="foot">New here? <a href="{% url 'register' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

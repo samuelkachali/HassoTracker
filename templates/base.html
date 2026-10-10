@@ -1,0 +1,61 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HassoTracker{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{% url 'dashboard' %}">
+        <span class="brand-mark">H</span> HassoTracker
+      </a>
+
+      {% if user.is_authenticated %}
+        <nav class="main-nav">
+          <a class="nav-link {% if nav_section == '' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a>
+          <a class="nav-link {% if nav_section == 'orders' %}active{% endif %}" href="{% url 'order_list' %}">Orders</a>
+          <a class="nav-link {% if nav_section == 'sell' %}active{% endif %}" href="{% url 'sell' %}">Sell</a>
+          <a class="nav-link {% if nav_section == 'layby' %}active{% endif %}" href="{% url 'layby' %}">Layby</a>
+          <a class="nav-link {% if nav_section == 'summary' %}active{% endif %}" href="{% url 'summary' %}">Profit</a>
+          <a class="nav-link {% if nav_section == 'products' %}active{% endif %}" href="{% url 'products' %}">Products</a>
+        </nav>
+        <div class="topbar-right">
+          <a class="who" href="{% url 'profile' %}" title="Business settings">{{ site_profile.display_name|default:user.username }}</a>
+          {% if user.is_staff %}<a class="btn btn-ghost btn-sm" href="/admin/">Admin</a>{% endif %}
+          <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+            <button class="btn btn-quiet btn-sm" type="submit">Log out</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="main-nav"></div>
+        <div class="topbar-right">
+          <a class="btn btn-ghost btn-sm" href="{% url 'login' %}">Log in</a>
+          <a class="btn btn-sm" href="{% url 'register' %}">Register</a>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="page">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="msg msg-{{ message.tags|default:'info' }}">
+            <span>{{ message }}</span>
+            <button class="msg-close" type="button" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

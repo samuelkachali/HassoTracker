@@ -1,0 +1,102 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HassoTracker{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <a class="brand" href="{% url 'dashboard' %}">
+        <span class="brand-mark">H</span>
+        <div>
+          <div class="brand-name">HassoTracker</div>
+          <div class="brand-sub">{{ site_profile.display_name|default:user.username }}</div>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        <span class="nav-group">Shop</span>
+        <a class="nav-link {% if nav_section == '' %}active{% endif %}" href="{% url 'dashboard' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </a>
+        <a class="nav-link {% if nav_section == 'sell' %}active{% endif %}" href="{% url 'sell' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 3.83H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg>
+          Record a sale
+        </a>
+        <a class="nav-link {% if nav_section == 'layby' %}active{% endif %}" href="{% url 'layby' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          Layby book
+        </a>
+        <a class="nav-link {% if nav_section == 'summary' %}active{% endif %}" href="{% url 'summary' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+          Profit &amp; spend
+        </a>
+
+        <span class="nav-group">Stock</span>
+        <a class="nav-link {% if nav_section == 'orders' %}active{% endif %}" href="{% url 'order_list' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          Orders
+        </a>
+        <a class="nav-link {% if nav_section == 'products' %}active{% endif %}" href="{% url 'products' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg>
+          Products &amp; prices
+        </a>
+      </nav>
+
+      <div class="sidebar-foot">
+        {% if user.is_staff %}
+          <a class="nav-link" href="/admin/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+            Admin
+          </a>
+        {% endif %}
+        <a class="nav-link" href="{% url 'profile' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          Business settings
+        </a>
+        <form method="post" action="{% url 'logout' %}" class="mx-0">{% csrf_token %}
+          <button class="nav-link link-btn" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+            Log out
+          </button>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-scrim" data-sidebar-close></div>
+
+  <div class="app-main">
+    <header class="mobile-bar">
+      <button class="hamburger" data-sidebar-toggle aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <span class="mobile-brand"><span class="brand-mark">H</span> HassoTracker</span>
+      <a class="btn btn-ghost btn-sm" href="{% url 'sell' %}">+ Sale</a>
+    </header>
+
+    <main class="page">
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li class="msg msg-{{ message.tags|default:'info' }}">
+              <span>{{ message }}</span>
+              <button class="msg-close" type="button" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
