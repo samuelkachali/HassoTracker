@@ -39,7 +39,7 @@
 
 {% if order.notes %}<div class="card card-pad mb-2"><p class="muted small mb-0">{{ order.notes }}</p></div>{% endif %}
 
-<div class="card card-pad mt-2" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div class="order-delete card card-pad mt-2">
   <div>
     <div class="small muted">Created a wrong order? You can delete it - this removes the order and anything linked to it.</div>
   </div>
@@ -92,7 +92,7 @@
 
   <div class="card card-pad mt-2">
     {% if batch.notes %}<p class="muted small">{{ batch.notes }}</p>{% endif %}
-    <div class="table-wrap">
+    <div class="table-wrap" role="region" aria-label="Batch stock counts" tabindex="0">
       <table class="data">
         <thead><tr><th>Selling unit</th><th class="num">Current price</th><th class="num">Produced</th><th class="num">Sold</th><th class="num">Available</th><th class="num">Potential</th></tr></thead>
         <tbody>

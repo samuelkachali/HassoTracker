@@ -35,22 +35,22 @@
       </div>
 
       {% if product.units.all %}
-        <div class="table-wrap">
-          <table class="data">
+        <div class="table-wrap products-table-wrap" role="region" aria-label="{{ product.name }} selling unit prices" tabindex="0">
+          <table class="data products-data">
             <thead><tr><th>Selling unit</th><th class="num">Current price</th><th class="num">Edit price</th><th></th></tr></thead>
             <tbody>
               {% for unit in product.units.all %}
                 <tr>
-                  <td class="bold">{{ unit.display_label }}</td>
-                  <td class="num">{{ unit.current_price|money }}</td>
-                  <td class="num">
-                    <form method="post" action="{% url 'unit_update' unit.pk %}" class="inline-form" style="justify-content:flex-end">
+                  <td class="bold unit-name-cell" data-label="Selling unit">{{ unit.display_label }}</td>
+                  <td class="num" data-label="Current price">{{ unit.current_price|money }}</td>
+                  <td class="num edit-price-cell" data-label="Edit price">
+                    <form method="post" action="{% url 'unit_update' unit.pk %}" class="inline-form unit-price-form">
                       {% csrf_token %}
-                      <input class="field-input" style="width:130px" type="number" step="0.01" min="0" name="price" value="{{ unit.current_price|floatformat:'-2' }}" aria-label="Price for {{ unit.display_label }}">
+                      <input class="field-input unit-price-input" type="number" step="0.01" min="0" name="price" value="{{ unit.current_price|floatformat:'-2' }}" aria-label="Price for {{ unit.display_label }}">
                       <button class="btn btn-quiet btn-sm" type="submit">Save</button>
                     </form>
                   </td>
-                  <td class="right">
+                  <td class="right remove-unit-cell" data-label="Remove unit">
                     <form method="post" action="{% url 'unit_delete' unit.pk %}" onsubmit="return confirm('Remove {{ unit.display_label }}?');">{% csrf_token %}
                       <button class="btn btn-danger btn-sm" type="submit">Remove</button>
                     </form>
