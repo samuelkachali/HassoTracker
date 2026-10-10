@@ -10,7 +10,7 @@ INPUT_CLASS = 'field-input'
 class RegisterForm(UserCreationForm):
     username = forms.CharField(
         widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'e.g. chikondi'}),
-        help_text='You will use this to log in.',
+        help_text='',
     )
     email = forms.EmailField(
         required=False,
@@ -23,10 +23,12 @@ class RegisterForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['username'].help_text = ''
         self.fields['password1'].widget.attrs.update({
             'class': INPUT_CLASS,
             'placeholder': 'At least 8 characters',
         })
+        self.fields['password2'].help_text = ''
         self.fields['password2'].widget.attrs.update({
             'class': INPUT_CLASS,
             'placeholder': 'Repeat the password',
