@@ -933,6 +933,63 @@ table.data tr.clickable:hover { background: var(--surface-2); }
   }
 }
 
+@media (max-width: 560px) {
+  .mobile-bar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .mobile-bar .brand-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+  .mobile-brand {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .mobile-bar .btn {
+    padding: 7px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .page-head h1 {
+    font-size: 2.3rem;
+    line-height: 1.02;
+  }
+  .page-head .sub {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+  .page-head .btn {
+    padding: 13px 18px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+  .card {
+    border-radius: 12px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.data {
+    min-width: 520px;
+  }
+  table.data th,
+  table.data td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font-size: 13px;
+  }
+  table.data thead th {
+    letter-spacing: 0.08em;
+    font-size: 10px;
+  }
+  .row-sub { font-size: 11px; }
+}
+
 /* ---------- ordering / unit editors ---------- */
 
 .price-editor { display: grid; gap: 10px; }
